@@ -36,13 +36,12 @@
 37|const API_BASE =
 38|    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
 39|
-40|async function getAuthHeader(): Promise<Record<string, string>> {
-41|    const {
-42|        data: { session },
-43|    } = await supabase.auth.getSession();
-44|    if (!session?.access_token) return {};
-45|    return { Authorization: `Bearer ${session.access_token}` };
-46|}
+async function getAuthHeader(): Promise<Record<string, string>> {
+    if (typeof window === 'undefined') return {};
+    const token = localStorage.getItem('misu_token');
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
+}
 47|
 48|async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 49|    const authHeaders = await getAuthHeader();

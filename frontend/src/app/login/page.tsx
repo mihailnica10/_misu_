@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
@@ -28,12 +27,24 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+            const apiBase =
+                process.env.NEXT_PUBLIC_API_BASE_URL ??
+                "https://misu-api.mihailnica10.workers.dev";
+            const resp = await fetch(`${apiBase}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
             });
 
-            if (error) throw error;
+            if (!resp.ok) {
+                const errBody = await resp.json().catch(() => null);
+                throw new Error(
+                    errBody?.error ?? errBody?.message ?? `HTTP ${resp.status}`,
+                );
+            }
+
+            const data = (await resp.json()) as { token: string };
+            localStorage.setItem("misu_token", data.token);
 
             router.push("/assistant");
         } catch (error: any) {

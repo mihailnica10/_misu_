@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
@@ -49,28 +48,38 @@ export default function SignupPage() {
         }
 
         try {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
+            const apiBase =
+                process.env.NEXT_PUBLIC_API_BASE_URL ??
+                "https://misu-api.mihailnica10.workers.dev";
+            const resp = await fetch(`${apiBase}/api/auth/signup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password, name: name.trim() || undefined }),
             });
 
-            if (error) throw error;
+            if (!resp.ok) {
+                const errBody = await resp.json().catch(() => null);
+                throw new Error(
+                    errBody?.error ?? errBody?.message ?? `HTTP ${resp.status}`,
+                );
+            }
 
-            if (data.session) {
-                const trimmedName = name.trim();
-                const trimmedOrg = organisation.trim();
-                if (trimmedName || trimmedOrg) {
-                    try {
-                        await updateUserProfile({
-                            ...(trimmedName && { displayName: trimmedName }),
-                            ...(trimmedOrg && { organisation: trimmedOrg }),
-                        });
-                    } catch (profileError) {
-                        console.error(
-                            "[signup] failed to persist profile fields",
-                            profileError,
-                        );
-                    }
+            const data = (await resp.json()) as { token: string };
+            localStorage.setItem("misu_token", data.token);
+
+            const trimmedName = name.trim();
+            const trimmedOrg = organisation.trim();
+            if (trimmedName || trimmedOrg) {
+                try {
+                    await updateUserProfile({
+                        ...(trimmedName && { displayName: trimmedName }),
+                        ...(trimmedOrg && { organisation: trimmedOrg }),
+                    });
+                } catch (profileError) {
+                    console.error(
+                        "[signup] failed to persist profile fields",
+                        profileError,
+                    );
                 }
             }
             setSuccess(true);

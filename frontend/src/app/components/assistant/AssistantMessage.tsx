@@ -25,7 +25,7 @@
 25|} from "../shared/types";
 26|import { EditCard, applyOptimisticResolution } from "./EditCard";
 27|import { PreResponseWrapper } from "../shared/PreResponseWrapper";
-28|import { supabase } from "@/lib/supabase";
+28|
 29|
 30|const RESPONSE_GLASS_SURFACE =
 31|    "rounded-xl border border-white/70 bg-white/55 shadow-[0_3px_9px_rgba(15,23,42,0.03),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-4px_9px_rgba(255,255,255,0.05)] backdrop-blur-2xl";
@@ -109,14 +109,11 @@
 109|        setBusy(verb);
 110|        setProgress({ done: 0, total: pending.length });
 111|        try {
-112|            const {
-113|                data: { session },
-114|            } = await supabase.auth.getSession();
-115|            const token = session?.access_token;
-116|            const apiBase =
-117|                process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
-118|
-119|            // Sequential so the per-document version counter advances in a
+            const token = typeof window !== 'undefined' ? localStorage.getItem('misu_token') : null;
+            const apiBase =
+                process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+
+            // Sequential so the per-document version counter advances in a
 120|            // predictable order and the viewer doesn't race between bumps.
 121|            let done = 0;
 122|            for (const { annotation } of pending) {
