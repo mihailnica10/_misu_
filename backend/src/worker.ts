@@ -5,6 +5,13 @@ import { getDb } from './db';
 import * as schema from './db/schema';
 import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
 
+// TanStack AI
+import { chat, toServerSentEventsResponse } from '@tanstack/ai';
+import { anthropicText } from '@tanstack/ai-anthropic';
+import { geminiText } from '@tanstack/ai-gemini';
+import { openaiText } from '@tanstack/ai-openai';
+import type { UIMessage } from '@tanstack/ai/client';
+
 export type Env = {
   DB: D1Database;
   R2: R2Bucket;
@@ -1302,6 +1309,62 @@ app.get('/download/:token', requireAuth, async (c) => {
     });
   } catch {
     return c.json({ error: 'Invalid link' }, 404);
+  }
+});
+
+// -----------------------------------------------------------------------
+// TanStack AI — streaming chat
+// -----------------------------------------------------------------------
+app.post('/api/chat/stream', requireAuth, async (c) => {
+  try {
+    const body = await c.req.json();
+    const { messages, model, apiKeys } = body as {
+      messages: UIMessage[];
+      model?: string;
+      apiKeys?: Record<string, string>;
+    };
+
+    if (!messages?.length) return c.json({ error: 'messages required' }, 400);
+
+    const modelName = model || 'claude-sonnet-4-20250514';
+    let adapter: any;
+
+    if (modelName.includes('claude') || modelName.includes('anthropic')) {
+      adapter = anthropicText(modelName, {
+        apiKey: apiKeys?.claude || apiKeys?.anthropic,
+      });
+    } else if (modelName.includes('gemini')) {
+      adapter = geminiText(modelName, {
+        apiKey: apiKeys?.gemini,
+      });
+    } else if (modelName.includes('gpt') || modelName.includes('o1') || modelName.includes('o3')) {
+      adapter = openaiText(modelName, {
+        apiKey: apiKeys?.openai,
+      });
+    } else {
+      adapter = openaiText(modelName, {
+        apiKey: apiKeys?.openrouter || apiKeys?.openai,
+        baseUrl: modelName.includes('openrouter') || apiKeys?.openrouter
+          ? 'https://openrouter.ai/api/v1' : undefined,
+      });
+    }
+
+    const systemPrompt = 'Ești un asistent juridic expert în legislația românească. ' +
+      'Ajuți utilizatorii să găsească informații legale, să analizeze documente și ' +
+      'să pregătească documente juridice. Răspunde în limba în care utilizatorul ' +
+      'scrie. Fii precis, citează articole de lege când e relevant.';
+
+    const result = await chat({
+      adapter,
+      messages,
+      system: systemPrompt,
+      maxTokens: 8192,
+    });
+
+    return toServerSentEventsResponse(result);
+  } catch (e: any) {
+    console.error('[chat/stream] error:', e);
+    return c.json({ error: e.message || 'Stream error' }, 500);
   }
 });
 
