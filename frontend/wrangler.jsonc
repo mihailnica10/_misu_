@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "misu",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-06-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": ".open-next",
+  "d1_databases": [
+    {
+      "binding": "misu_db",
+      "database_name": "misu-db",
+      "database_id": "01049989-8363-4cc9-b9e3-7fd0f98a2fd0"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "misu_storage",
+      "bucket_name": "misu-documents"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

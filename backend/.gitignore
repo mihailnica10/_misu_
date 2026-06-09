@@ -1,7 +1,6 @@
-node_modules
-dist
-.env*
-!.env.example
-*.log
-logs/
-.DS_Store
+node_modules/
+dist/
+.wrangler/
+*.db
+.env
+.env.local
