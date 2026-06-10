@@ -1,0 +1,61 @@
+{
+  "common": {
+    "app_name": "Misú",
+    "tagline": "AI Legal Platform",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "close": "Close",
+    "back": "Back",
+    "confirm": "Confirm",
+    "language": "Language"
+  },
+  "nav": {
+    "assistant": "Assistant",
+    "workflows": "Workflows",
+    "projects": "Projects",
+    "tabular_reviews": "Tabular Reviews",
+    "account": "Account",
+    "support": "Support",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "assistant": {
+    "title": "Assistant",
+    "placeholder": "Ask anything about your documents...",
+    "new_chat": "New chat",
+    "no_chats": "No conversations yet",
+    "delete_chat": "Delete conversation",
+    "upload_doc": "Upload document"
+  },
+  "landing": {
+    "hero_title": "Your AI Legal Assistant",
+    "hero_subtitle": "Analyze contracts, research case law, and draft documents with AI-powered assistance.",
+    "get_started": "Get Started",
+    "sign_in": "Sign In"
+  },
+  "account": {
+    "title": "Account",
+    "profile": "Profile",
+    "api_keys": "API Keys",
+    "models": "Models",
+    "danger_zone": "Danger Zone",
+    "delete_account": "Delete Account"
+  },
+  "auth": {
+    "login": "Log In",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "no_account": "Don't have an account?",
+    "has_account": "Already have an account?"
+  },
+  "language_switcher": {
+    "label": "Language"
+  }
+}

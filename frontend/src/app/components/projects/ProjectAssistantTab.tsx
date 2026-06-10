@@ -3,7 +3,7 @@
 import { type Dispatch, type SetStateAction } from "react";
 import { MessageSquare } from "lucide-react";
 import { RowActions } from "@/app/components/shared/RowActions";
-import type { MikeChat as Chat } from "@/app/components/shared/types";
+import type { MisuChat as Chat } from "@/app/components/shared/types";
 import { formatDate, NAME_COL_W } from "./ProjectPageParts";
 
 export function ProjectAssistantTab({

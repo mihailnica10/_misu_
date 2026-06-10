@@ -92,18 +92,18 @@ export function MisuIcon({
     spin = false,
     done = false,
     error = false,
-    // misu branding
+    mike = false,
     size = 24,
     style,
 }: {
     spin?: boolean;
     done?: boolean;
     error?: boolean;
-    // removed
+    mike?: boolean;
     size?: number;
     style?: React.CSSProperties;
 }) {
-    // void
+    void mike;
     const id = useId().replace(/:/g, "");
     const palette = error
         ? ERROR_PALETTE

@@ -43,13 +43,13 @@ import {
     uploadDocumentVersion,
     renameDocumentVersion,
     getProjectPeople,
-    type MikeDocumentVersion,
-} from "@/app/lib/mikeApi";
+    type MisuDocumentVersion,
+} from "@/app/lib/misuApi";
 import type {
-    MikeDocument,
-    MikeFolder,
-    MikeProject,
-    MikeChat,
+    MisuDocument,
+    MisuFolder,
+    MisuProject,
+    MisuChat,
     TabularReview,
 } from "@/app/components/shared/types";
 import { ToolbarTabs } from "@/app/components/shared/ToolbarTabs";
@@ -120,7 +120,7 @@ function DocVersionHistory({
     docId: string;
     filename: string;
     loading: boolean;
-    versions: MikeDocumentVersion[];
+    versions: MisuDocumentVersion[];
     onDownloadVersion: (
         docId: string,
         versionId: string,
@@ -273,9 +273,9 @@ function DocVersionHistory({
 }
 
 export function ProjectPage({ projectId, initialTab }: Props) {
-    const [project, setProject] = useState<MikeProject | null>(null);
-    const [folders, setFolders] = useState<MikeFolder[]>([]);
-    const [chats, setChats] = useState<MikeChat[]>([]);
+    const [project, setProject] = useState<MisuProject | null>(null);
+    const [folders, setFolders] = useState<MisuFolder[]>([]);
+    const [chats, setChats] = useState<MisuChat[]>([]);
     const [projectReviews, setProjectReviews] = useState<TabularReview[]>([]);
     const [loading, setLoading] = useState(true);
     const searchParams = useSearchParams();
@@ -289,8 +289,8 @@ export function ProjectPage({ projectId, initialTab }: Props) {
     const [ownerOnlyAction, setOwnerOnlyAction] = useState<string | null>(null);
     const { user } = useAuth();
     const [uploadVersionDoc, setUploadVersionDoc] =
-        useState<MikeDocument | null>(null);
-    const [viewingDoc, setViewingDoc] = useState<MikeDocument | null>(null);
+        useState<MisuDocument | null>(null);
+    const [viewingDoc, setViewingDoc] = useState<MisuDocument | null>(null);
     const [viewingDocVersion, setViewingDocVersion] = useState<{
         id: string;
         label: string;
@@ -312,7 +312,7 @@ export function ProjectPage({ projectId, initialTab }: Props) {
         Set<string>
     >(() => new Set());
     const [versionsByDocId, setVersionsByDocId] = useState<
-        Map<string, MikeDocumentVersion[]>
+        Map<string, MisuDocumentVersion[]>
     >(() => new Map());
     const [loadingVersionDocIds, setLoadingVersionDocIds] = useState<
         Set<string>
@@ -375,12 +375,12 @@ export function ProjectPage({ projectId, initialTab }: Props) {
      * latest_version_number) and re-fetch the version list so the history
      * panel shows the new row.
      */
-    function handleUploadNewVersion(doc: MikeDocument) {
+    function handleUploadNewVersion(doc: MisuDocument) {
         setUploadVersionDoc(doc);
     }
 
     async function submitNewVersion(
-        doc: MikeDocument,
+        doc: MisuDocument,
         file: File,
         displayName: string,
     ) {
@@ -473,7 +473,7 @@ export function ProjectPage({ projectId, initialTab }: Props) {
     useEffect(() => {
         Promise.all([
             getProject(projectId),
-            listProjectChats(projectId).catch(() => [] as MikeChat[]),
+            listProjectChats(projectId).catch(() => [] as MisuChat[]),
             listTabularReviews(projectId).catch(() => []),
         ])
             .then(([proj, projectChats, projectReviews]) => {
@@ -551,7 +551,7 @@ export function ProjectPage({ projectId, initialTab }: Props) {
         // Immediately hide the input and show an optimistic folder row
         setCreatingFolderIn(undefined);
         const tempId = `temp-${Date.now()}`;
-        const optimistic: MikeFolder = {
+        const optimistic: MisuFolder = {
             id: tempId,
             project_id: projectId,
             user_id: "",
@@ -606,7 +606,7 @@ export function ProjectPage({ projectId, initialTab }: Props) {
 
     // ── Doc/chat/review handlers ──────────────────────────────────────────────
 
-    function handleDocsSelected(newDocs: MikeDocument[]) {
+    function handleDocsSelected(newDocs: MisuDocument[]) {
         setProject((prev) =>
             prev ? {
                 ...prev,
@@ -811,7 +811,7 @@ export function ProjectPage({ projectId, initialTab }: Props) {
 
     function wouldCreateCycle(movingId: string, targetId: string): boolean {
         // Returns true if targetId is movingId or a descendant of it
-        let cur: MikeFolder | undefined = folders.find((f) => f.id === targetId);
+        let cur: MisuFolder | undefined = folders.find((f) => f.id === targetId);
         while (cur) {
             if (cur.id === movingId) return true;
             if (!cur.parent_folder_id) break;
@@ -821,8 +821,8 @@ export function ProjectPage({ projectId, initialTab }: Props) {
     }
 
     async function handleDropOnFolder(targetFolderId: string | null, dt: DataTransfer) {
-        const docId = dt.getData("application/mike-doc");
-        const subFolderId = dt.getData("application/mike-folder");
+        const docId = dt.getData("application/misu-doc");
+        const subFolderId = dt.getData("application/misu-folder");
         if (docId) {
             const doc = (project?.documents ?? []).find((d) => d.id === docId);
             if (!doc || (doc.folder_id ?? null) === targetFolderId) return;
@@ -904,7 +904,7 @@ export function ProjectPage({ projectId, initialTab }: Props) {
                             <div
                                 draggable
                                 onDragStart={(e) => {
-                                    e.dataTransfer.setData("application/mike-doc", doc.id);
+                                    e.dataTransfer.setData("application/misu-doc", doc.id);
                                     e.dataTransfer.effectAllowed = "move";
                                 }}
                                 onClick={() => {
@@ -1031,7 +1031,7 @@ export function ProjectPage({ projectId, initialTab }: Props) {
                             <div
                                 draggable
                                 onDragStart={(e) => {
-                                    e.dataTransfer.setData("application/mike-folder", folder.id);
+                                    e.dataTransfer.setData("application/misu-folder", folder.id);
                                     e.dataTransfer.effectAllowed = "move";
                                     e.stopPropagation();
                                 }}

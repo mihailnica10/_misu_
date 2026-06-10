@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MikeIcon } from "@/components/chat/mike-icon";
+import { MisuIcon } from "@/components/chat/misu-icon";
 
 interface SiteLogoProps {
     size?: "sm" | "md" | "lg" | "xl";
@@ -16,7 +16,7 @@ export function SiteLogo({
 }: SiteLogoProps) {
     const landingHref =
         process.env.NODE_ENV === "production"
-            ? "https://mikeoss.com"
+            ? "https://misu.ro"
             : "http://localhost:3000";
     const sizeClasses = {
         sm: "text-xl",
@@ -38,8 +38,8 @@ export function SiteLogo({
                 animate ? "sidebar-fade-in" : ""
             } ${className}`}
         >
-            <MikeIcon size={iconSizes[size]} />
-            <span>Mike</span>
+            <MisuIcon size={iconSizes[size]} />
+            <span>Misú</span>
         </h1>
     );
 

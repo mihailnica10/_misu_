@@ -16,7 +16,7 @@ import {
 import { ConfirmPopup } from "@/app/components/shared/ConfirmPopup";
 import { DocView } from "@/app/components/shared/DocView";
 import { WarningPopup } from "@/app/components/shared/WarningPopup";
-import type { Document, DocumentVersion } from "@/app/lib/mikeApi";
+import type { Document, DocumentVersion } from "@/app/lib/misuApi";
 import { cn } from "@/lib/utils";
 import { formatBytes, formatDate } from "./ProjectPageParts";
 import { fileTypeForVersion, filenameExtension, hasExtensionChange } from "@/app/lib/misuApi";

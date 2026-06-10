@@ -15,10 +15,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
 import { useChatHistoryContext } from "@/app/contexts/ChatHistoryContext";
 import { useRouter, usePathname } from "next/navigation";
+import { SidebarContext } from "@/app/contexts/SidebarContext";
+import { MisuIcon } from "@/components/chat/misu-icon";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import Link from "next/link";
-import { MikeIcon } from "@/components/chat/mike-icon";
 import { SidebarChatItem } from "@/app/components/shared/SidebarChatItem";
-import { listProjects } from "@/app/lib/mikeApi";
+import { listProjects } from "@/app/lib/misuApi";
 
 const NAV_ITEMS = [
     { href: "/assistant", label: "Assistant", icon: MessageSquare },
@@ -127,13 +129,13 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
                             href="/assistant"
                             className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                         >
-                            <MikeIcon size={22} />
+                            <MisuIcon size={22} />
                             <span
                                 className={`text-2xl font-light font-serif ${
                                     shouldAnimate ? "sidebar-fade-in" : ""
                                 }`}
                             >
-                                Mike
+                                Misú
                             </span>
                         </Link>
                     </div>
@@ -301,6 +303,9 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
                                     <User className="h-4 w-4" />
                                     Account Settings
                                 </button>
+                                <div className="px-4 py-2 border-t border-gray-100">
+                                    <LanguageSwitcher className="w-full justify-between" />
+                                </div>
                             </div>
                         )}
                     </div>

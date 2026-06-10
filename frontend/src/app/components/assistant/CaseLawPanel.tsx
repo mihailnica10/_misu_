@@ -59,7 +59,7 @@ import {
 import {
     getCourtlistenerOpinions,
     type CaseLawOpinion,
-} from "@/app/lib/mikeApi";
+} from "@/app/lib/misuApi";
 import { cn } from "@/lib/utils";
 
 export type CaseTab = {

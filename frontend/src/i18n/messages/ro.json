@@ -1,0 +1,61 @@
+{
+  "common": {
+    "app_name": "Misú",
+    "tagline": "Platformă Juridică AI",
+    "loading": "Se încarcă...",
+    "error": "A apărut o eroare",
+    "save": "Salvează",
+    "cancel": "Anulează",
+    "delete": "Șterge",
+    "edit": "Editează",
+    "create": "Creează",
+    "search": "Caută",
+    "close": "Închide",
+    "back": "Înapoi",
+    "confirm": "Confirmă",
+    "language": "Limbă"
+  },
+  "nav": {
+    "assistant": "Asistent",
+    "workflows": "Fluxuri",
+    "projects": "Proiecte",
+    "tabular_reviews": "Revizii Tabulare",
+    "account": "Cont",
+    "support": "Suport",
+    "settings": "Setări",
+    "logout": "Deconectare"
+  },
+  "assistant": {
+    "title": "Asistent",
+    "placeholder": "Întreabă orice despre documentele tale...",
+    "new_chat": "Conversație nouă",
+    "no_chats": "Nicio conversație",
+    "delete_chat": "Șterge conversația",
+    "upload_doc": "Încarcă document"
+  },
+  "landing": {
+    "hero_title": "Asistentul Tău Juridic AI",
+    "hero_subtitle": "Analizează contracte, cercetează jurisprudență și redactează documente cu ajutorul AI.",
+    "get_started": "Începe",
+    "sign_in": "Autentificare"
+  },
+  "account": {
+    "title": "Cont",
+    "profile": "Profil",
+    "api_keys": "Chei API",
+    "models": "Modele",
+    "danger_zone": "Zonă Periculoasă",
+    "delete_account": "Șterge Contul"
+  },
+  "auth": {
+    "login": "Autentificare",
+    "signup": "Înregistrare",
+    "email": "Email",
+    "password": "Parolă",
+    "no_account": "Nu ai cont?",
+    "has_account": "Ai deja cont?"
+  },
+  "language_switcher": {
+    "label": "Limbă"
+  }
+}
