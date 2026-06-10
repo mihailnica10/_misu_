@@ -62,8 +62,7 @@ export function useFetchDocxBytes(
         }
 
         const key = cacheKey(documentId, versionId, refetchKey);
-        const apiBase =
-            process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+        const apiBase = "https://misu-api.mihailnica10.workers.dev";
         const qs = versionId
             ? `?version_id=${encodeURIComponent(versionId)}`
             : "";
@@ -86,11 +85,10 @@ export function useFetchDocxBytes(
         const pending =
             inFlight.get(key) ??
             (async () => {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('misu_token') : null;
                 // Stream bytes through the backend (avoids CORS on R2
                 // signed URLs).
                 const bin = await fetch(url, {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    credentials: "include",
                 });
                 if (!bin.ok) throw new Error(`HTTP ${bin.status}`);
                 const buf = await bin.arrayBuffer();

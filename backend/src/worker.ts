@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { SignJWT, jwtVerify } from 'jose';
 import { getDb } from './db';
 import * as schema from './db/schema';
 import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { createAuth } from './lib/auth';
 
 // TanStack AI
 import { chat, toServerSentEventsResponse } from '@tanstack/ai';
@@ -19,6 +19,8 @@ export type Env = {
   JWT_SECRET?: string;
   FRONTEND_URL?: string;
   ENVIRONMENT?: string;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
 };
 
 type Variables = {
@@ -28,14 +30,19 @@ type Variables = {
 
 type AppBindings = { Bindings: Env; Variables: Variables };
 
-const JWT_ALG = 'HS256';
-const JWT_EXPIRES = '7d';
-
 const app = new Hono<AppBindings>();
 
 // CORS
 app.use('/*', cors({
-  origin: (origin, c) => c.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, c) => {
+    const allowed = c.env.FRONTEND_URL || 'http://localhost:3000';
+    if (!origin) return allowed;
+    // Accept configured origin OR workers.dev preview URLs
+    if (origin === allowed || origin.endsWith('.workers.dev')) {
+      return origin;
+    }
+    return allowed;
+  },
   credentials: true,
 }));
 
@@ -43,117 +50,35 @@ app.use('/*', cors({
 app.get('/health', (c) => c.json({ ok: true, timestamp: new Date().toISOString() }));
 
 // -----------------------------------------------------------------------
-// Auth helpers
+// Better Auth — mount handler for all /api/auth/* endpoints
 // -----------------------------------------------------------------------
-async function getJwtSecret(env: Env): Promise<Uint8Array> {
-  const secret = env.JWT_SECRET || 'misu-dev-secret';
-  return new TextEncoder().encode(secret);
-}
-
-async function hashPassword(password: string): Promise<string> {
-  const msgBuffer = new TextEncoder().encode(password + 'misu-salt-v1');
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function createToken(userId: string, email: string, env: Env): Promise<string> {
-  const secret = await getJwtSecret(env);
-  return new SignJWT({ sub: userId, email })
-    .setProtectedHeader({ alg: JWT_ALG })
-    .setIssuedAt()
-    .setExpirationTime(JWT_EXPIRES)
-    .sign(secret);
-}
-
-async function verifyToken(token: string, env: Env): Promise<{ sub: string; email: string } | null> {
+app.on(['POST', 'GET'], '/api/auth/*', async (c) => {
   try {
-    const secret = await getJwtSecret(env);
-    const { payload } = await jwtVerify(token, secret);
-    return { sub: payload.sub as string, email: payload.email as string };
-  } catch { return null; }
-}
+    const auth = createAuth(c.env.DB, c.env);
+    return auth.handler(c.req.raw);
+  } catch (e: any) {
+    console.error('Better Auth handler error:', e, e?.stack);
+    return c.json({ error: 'Authentication error', message: e?.message }, 500);
+  }
+});
 
+// -----------------------------------------------------------------------
+// Better Auth session middleware (replaces old JWT requireAuth)
+// -----------------------------------------------------------------------
 async function requireAuth(c: any, next: any) {
-  const auth = c.req.header('Authorization');
-  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401);
-  const payload = await verifyToken(auth.slice(7), c.env);
-  if (!payload) return c.json({ error: 'Invalid token' }, 401);
-  c.set('userId', payload.sub);
-  c.set('userEmail', payload.email);
-  await next();
+  try {
+    const auth = createAuth(c.env.DB, c.env);
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
+    if (!session) return c.json({ error: 'Unauthorized' }, 401);
+    c.set('userId', session.user.id);
+    c.set('userEmail', session.user.email);
+    await next();
+  } catch (e: any) {
+    return c.json({ error: 'Authentication error' }, 500);
+  }
 }
-
-// -----------------------------------------------------------------------
-// Auth routes
-// -----------------------------------------------------------------------
-app.post('/api/auth/signup', async (c) => {
-  try {
-    const db = getDb(c.env.DB);
-    const { email, password, name } = await c.req.json();
-    if (!email || !password) return c.json({ error: 'Email and password required' }, 400);
-
-    const existing = await db.select().from(schema.user)
-      .where(eq(schema.user.email, email.toLowerCase())).get();
-    if (existing) return c.json({ error: 'User already exists' }, 409);
-
-    const passwordHash = await hashPassword(password);
-    const now = Date.now();
-
-    const newUser = await db.insert(schema.user).values({
-      email: email.toLowerCase(),
-      name: name || email.split('@')[0],
-      emailVerified: false,
-      createdAt: now,
-      updatedAt: now,
-    }).returning().get();
-
-    // Store password as an account entry
-    await db.insert(schema.account).values({
-      userId: newUser.id,
-      providerId: 'credential',
-      accountId: newUser.id,
-      password: passwordHash,
-      createdAt: now,
-      updatedAt: now,
-    }).run();
-
-    const token = await createToken(newUser.id, newUser.email, c.env);
-    return c.json({ token, user: { id: newUser.id, email: newUser.email, name: newUser.name } }, 201);
-  } catch (e: any) {
-    return c.json({ error: e.message }, 500);
-  }
-});
-
-app.post('/api/auth/login', async (c) => {
-  try {
-    const db = getDb(c.env.DB);
-    const { email, password } = await c.req.json();
-    if (!email || !password) return c.json({ error: 'Email and password required' }, 400);
-
-    const user = await db.select().from(schema.user)
-      .where(eq(schema.user.email, email.toLowerCase())).get();
-    if (!user) return c.json({ error: 'Invalid credentials' }, 401);
-
-    const creds = await db.select().from(schema.account)
-      .where(and(eq(schema.account.userId, user.id), eq(schema.account.providerId, 'credential'))).get();
-
-    if (!creds?.password) return c.json({ error: 'Invalid credentials' }, 401);
-
-    const passwordHash = await hashPassword(password);
-    if (creds.password !== passwordHash) return c.json({ error: 'Invalid credentials' }, 401);
-
-    const token = await createToken(user.id, user.email, c.env);
-    return c.json({ token, user: { id: user.id, email: user.email, name: user.name } });
-  } catch (e: any) {
-    return c.json({ error: e.message }, 500);
-  }
-});
-
-app.get('/api/auth/session', requireAuth, async (c) => {
-  return c.json({ user: { id: c.get('userId'), email: c.get('userEmail') } });
-});
-
-app.post('/api/auth/logout', async (c) => c.json({ ok: true }));
 
 // -----------------------------------------------------------------------
 // User routes

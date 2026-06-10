@@ -9,16 +9,16 @@ export const user = sqliteTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').notNull().$defaultFn(() => Date.now()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 export const session = sqliteTable('session', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  expiresAt: integer('expires_at').notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   token: text('token').notNull().unique(),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').notNull().$defaultFn(() => Date.now()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
@@ -36,17 +36,17 @@ export const account = sqliteTable('account', {
   refreshTokenExpiresAt: integer('refresh_token_expires_at'),
   scope: text('scope'),
   password: text('password'),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').notNull().$defaultFn(() => Date.now()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 export const verification = sqliteTable('verification', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
-  expiresAt: integer('expires_at').notNull(),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').notNull().$defaultFn(() => Date.now()),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 // ---------------------------------------------------------------------------

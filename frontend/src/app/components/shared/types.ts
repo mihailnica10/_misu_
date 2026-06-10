@@ -1,4 +1,4 @@
-// Shared TypeScript types for Misú AI legal assistant
+// Shared TypeScript types for misú AI legal assistant
 
 export interface MisuFolder {
   id: string;

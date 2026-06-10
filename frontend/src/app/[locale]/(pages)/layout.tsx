@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatHistoryProvider } from "@/app/contexts/ChatHistoryContext";
 import { SidebarContext } from "@/app/contexts/SidebarContext";
 import { AppSidebar } from "@/app/components/shared/AppSidebar";
+import { Footer } from "@/components/footer";
 
 export default function MisuLayout({
     children,
@@ -95,8 +96,9 @@ export default function MisuLayout({
                                     <Menu className="h-5 w-5" />
                                 </button>
                             </div>
-                            <main className="flex-1 overflow-y-auto md:overflow-hidden w-full h-full">
+                            <main className="flex-1 overflow-y-auto md:overflow-hidden w-full h-full flex flex-col">
                                 {children}
+                                <Footer />
                             </main>
                         </div>
                     </div>

@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Send, CheckCircle } from "lucide-react";
+import { CheckCircle, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/AuthContext";
+import { Footer } from "@/components/footer";
 
 type FeedbackType = "bug" | "feature" | "question" | "other";
 
 export default function SupportPage() {
+    const t = useTranslations("support");
     const router = useRouter();
     const { user, isAuthenticated, authLoading } = useAuth();
 
@@ -31,23 +34,23 @@ export default function SupportPage() {
     }[] = [
         {
             value: "bug",
-            label: "Bug Report",
-            description: "Report something that isn't working",
+            label: t("bug"),
+            description: t("bug_desc"),
         },
         {
             value: "feature",
-            label: "Feature Request",
-            description: "Suggest a new feature or improvement",
+            label: t("feature"),
+            description: t("feature_desc"),
         },
         {
             value: "question",
-            label: "Question",
-            description: "Ask a question about using Misú",
+            label: t("question"),
+            description: t("question_desc"),
         },
         {
             value: "other",
-            label: "Other",
-            description: "General feedback or other inquiries",
+            label: t("other"),
+            description: t("other_desc"),
         },
     ];
 
@@ -76,7 +79,7 @@ export default function SupportPage() {
             setIsSubmitted(true);
         } catch (err) {
             console.error("Error submitting feedback:", err);
-            setError("Failed to submit your feedback. Please try again.");
+            setError(t("error_submit"));
         } finally {
             setIsSubmitting(false);
         }
@@ -84,50 +87,54 @@ export default function SupportPage() {
 
     if (isSubmitted) {
         return (
-            <div className="h-full flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-white rounded-xl text-center">
-                    <div className="flex justify-center mb-4">
-                        <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-                            <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="min-h-dvh bg-white flex flex-col">
+                <div className="flex-1 flex items-center justify-center p-4">
+                    <div className="max-w-md w-full bg-white rounded-xl text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <CheckCircle className="h-8 w-8 text-green-600" />
+                            </div>
                         </div>
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                            {t("thank_you")}
+                        </h2>
+                        <p className="text-gray-600 mb-6">
+                            {t("we_ll_reach_out")}
+                        </p>
+                        <button
+                            onClick={() => router.push("/")}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                        >
+                            {t("back_home")}
+                        </button>
                     </div>
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                        Thank you for helping us improve.
-                    </h2>
-                    <p className="text-gray-600 mb-6">
-                        We will get in touch with you soon via email.
-                    </p>
-                    <button
-                        onClick={() => router.push("/")}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
-                    >
-                        Back to Home
-                    </button>
                 </div>
+                <Footer />
             </div>
         );
     }
 
     return (
-        <div className="w-full flex flex-col px-6 h-full">
-            <div className="w-full max-w-4xl m-auto flex flex-col h-full">
-                {/* Fixed Header Section */}
-                <div className="flex-shrink-0 pt-6 md:pt-10 pb-0">
-                    <div className="mb-5">
-                        <h1 className="text-4xl font-medium font-eb-garamond text-gray-900 mb-3">
-                            Support
-                        </h1>
+        <div className="min-h-dvh bg-white flex flex-col">
+            <div className="flex-1 w-full flex flex-col px-6">
+                <div className="w-full max-w-4xl m-auto flex flex-col">
+                    {/* Fixed Header Section */}
+                    <div className="flex-shrink-0 pt-6 md:pt-10 pb-0">
+                        <div className="mb-5">
+                            <h1 className="text-4xl font-medium font-eb-garamond text-gray-900 mb-3">
+                                {t("title")}
+                            </h1>
+                        </div>
                     </div>
-                </div>
 
-                {/* Form Container */}
-                <div className="flex-1 overflow-y-auto pb-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Form Container */}
+                    <div className="flex-1 overflow-y-auto pb-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Feedback Type Selection */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    What can we help you with?
+                                    {t("question_label")}
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {feedbackTypes.map((type) => (
@@ -167,7 +174,7 @@ export default function SupportPage() {
                                         htmlFor="link"
                                         className="block text-sm font-medium text-gray-700 mb-2"
                                     >
-                                        Link to issue (optional)
+                                        {t("link_label")}
                                     </label>
                                     <input
                                         type="url"
@@ -176,14 +183,11 @@ export default function SupportPage() {
                                         onChange={(e) =>
                                             setLink(e.target.value)
                                         }
-                                        placeholder="https://misu.ro/..."
+                                        placeholder={t("link_placeholder")}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
-                                        If the bug is in a chat, mouseover the
-                                        chat in the sidebar, click the dots,
-                                        then click share and paste the link
-                                        here.
+                                        {t("link_hint")}
                                     </p>
                                 </div>
                             )}
@@ -194,7 +198,7 @@ export default function SupportPage() {
                                     htmlFor="subject"
                                     className="block text-sm font-medium text-gray-700 mb-2"
                                 >
-                                    Subject
+                                    {t("subject")}
                                 </label>
                                 <input
                                     type="text"
@@ -212,13 +216,13 @@ export default function SupportPage() {
                                     htmlFor="message"
                                     className="block text-sm font-medium text-gray-700 mb-2"
                                 >
-                                    Message
+                                    {t("message")}
                                 </label>
                                 <textarea
                                     id="message"
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
-                                    placeholder="Please describe your question, issue, or suggestion in detail..."
+                                    placeholder={t("message_placeholder")}
                                     rows={5}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                                     required
@@ -228,7 +232,7 @@ export default function SupportPage() {
                             {/* Email Display (if logged in) */}
                             {user?.email && (
                                 <div className="text-sm text-gray-500">
-                                    We'll respond to:{" "}
+                                    {t("respond_to")}{" "}
                                     <span className="font-medium">
                                         {user.email}
                                     </span>
@@ -255,12 +259,12 @@ export default function SupportPage() {
                                 {isSubmitting ? (
                                     <>
                                         <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        <span>Sending...</span>
+                                        <span>{t("sending")}</span>
                                     </>
                                 ) : (
                                     <>
                                         <Send className="h-4 w-4" />
-                                        <span>Submit</span>
+                                        <span>{t("submit")}</span>
                                     </>
                                 )}
                             </button>
@@ -268,6 +272,8 @@ export default function SupportPage() {
                     </div>
                 </div>
             </div>
+            <Footer />
+        </div>
         </div>
     );
 }

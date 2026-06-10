@@ -355,17 +355,12 @@ function EditResolveButtons({
             }
             try {
                 if (typeof window === 'undefined') return;
-                const token = localStorage.getItem('misu_token');
-                const apiBase =
-                    process.env.NEXT_PUBLIC_API_BASE_URL ??
-                    "http://localhost:3001";
+                const apiBase = "https://misu-api.mihailnica10.workers.dev";
                 const resp = await fetch(
                     `${apiBase}/single-documents/${edit.document_id}/edits/${edit.edit_id}/${verb}`,
                     {
                         method: "POST",
-                        headers: token
-                            ? { Authorization: `Bearer ${token}` }
-                            : undefined,
+                        credentials: "include",
                     },
                 );
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -455,16 +450,14 @@ function DownloadButton({
         setBusy(true);
         try {
             if (typeof window === 'undefined') return;
-            const token = localStorage.getItem('misu_token');
-            const apiBase =
-                process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+            const apiBase = "https://misu-api.mihailnica10.workers.dev";
             const qs = versionId
                 ? `?version_id=${encodeURIComponent(versionId)}`
                 : "";
             const resp = await fetch(
                 `${apiBase}/single-documents/${documentId}/docx${qs}`,
                 {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    credentials: "include",
                 },
             );
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

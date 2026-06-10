@@ -1,14 +1,7 @@
 "use client";
 
-import React, {
-    createContext,
-    useContext,
-    useEffect,
-    useState,
-    ReactNode,
-} from "react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://misu-api.mihailnica10.workers.dev";
+import React, { createContext, useContext, ReactNode } from "react";
+import { authClient } from "@/lib/auth-client";
 
 interface User {
     id: string;
@@ -27,66 +20,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("misu_token");
-}
-
-function setToken(token: string | null) {
-    if (typeof window === "undefined") return;
-    if (token) localStorage.setItem("misu_token", token);
-    else localStorage.removeItem("misu_token");
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [authLoading, setAuthLoading] = useState(true);
+    const { data: session, isPending } = authClient.useSession();
 
-    useEffect(() => {
-        const token = getToken();
-        if (!token) {
-            setAuthLoading(false);
-            return;
-        }
-        fetch(`${API_BASE}/api/auth/session`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                if (data?.user) setUser(data.user);
-                else setToken(null);
-            })
-            .catch(() => setToken(null))
-            .finally(() => setAuthLoading(false));
-    }, []);
+    const user: User | null = session?.user
+        ? { id: session.user.id, email: session.user.email, name: session.user.name }
+        : null;
 
     const signOut = async () => {
-        setToken(null);
-        setUser(null);
+        await authClient.signOut();
     };
 
     const login = async (email: string, password: string) => {
-        const res = await fetch(`${API_BASE}/api/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+        const { data, error } = await authClient.signIn.email({
+            email,
+            password,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Login failed");
-        setToken(data.token);
-        setUser(data.user);
+        if (error) throw new Error(error.message || "Login failed");
     };
 
     const signup = async (email: string, password: string, name: string) => {
-        const res = await fetch(`${API_BASE}/api/auth/signup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, name }),
+        const { data, error } = await authClient.signUp.email({
+            email,
+            password,
+            name: name || email.split("@")[0],
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Signup failed");
-        setToken(data.token);
-        setUser(data.user);
+        if (error) throw new Error(error.message || "Signup failed");
     };
 
     return (
@@ -94,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             value={{
                 user,
                 isAuthenticated: !!user,
-                authLoading,
+                authLoading: isPending,
                 signOut,
                 login,
                 signup,

@@ -1,5 +1,5 @@
 /**
- * Misú API client — all requests to the Worker API backend.
+ * misú API client — all requests to the Worker API backend.
  * Attaches the JWT auth token for user authentication.
  */
 
@@ -33,25 +33,16 @@ interface ServerChatDetailOut {
     messages: ServerMessage[];
 }
 
-const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
-
-async function getAuthHeader(): Promise<Record<string, string>> {
-    if (typeof window === "undefined") return {};
-    const token = localStorage.getItem("misu_token");
-    if (!token) return {};
-    return { Authorization: `Bearer ${token}` };
-}
+const API_BASE = "https://misu-api.mihailnica10.workers.dev";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-    const authHeaders = await getAuthHeader();
     const { headers: initHeaders, ...restInit } = init ?? {};
     const response = await fetch(`${API_BASE}${path}`, {
         cache: "no-store",
+        credentials: "include",
         ...restInit,
         headers: {
             Accept: "application/json",
-            ...authHeaders,
             ...(initHeaders as Record<string, string> | undefined),
         },
     });
@@ -246,7 +237,6 @@ export async function uploadDocumentVersion(
     file: File,
     displayName?: string,
 ): Promise<MisuDocumentVersion> {
-    const authHeaders = await getAuthHeader();
     const form = new FormData();
     form.append("file", file);
     if (displayName) form.append("display_name", displayName);
@@ -254,7 +244,7 @@ export async function uploadDocumentVersion(
         `${API_BASE}/single-documents/${documentId}/versions`,
         {
             method: "POST",
-            headers: { ...authHeaders },
+            credentials: "include",
             body: form,
         },
     );
@@ -281,14 +271,13 @@ export async function uploadProjectDocument(
     projectId: string,
     file: File,
 ): Promise<MisuDocument> {
-    const authHeaders = await getAuthHeader();
     const form = new FormData();
     form.append("file", file);
     const response = await fetch(
         `${API_BASE}/projects/${projectId}/documents`,
         {
             method: "POST",
-            headers: { ...authHeaders },
+            credentials: "include",
             body: form,
         },
     );
@@ -299,12 +288,11 @@ export async function uploadProjectDocument(
 export async function uploadStandaloneDocument(
     file: File,
 ): Promise<MisuDocument> {
-    const authHeaders = await getAuthHeader();
     const form = new FormData();
     form.append("file", file);
     const response = await fetch(`${API_BASE}/single-documents`, {
         method: "POST",
-        headers: { ...authHeaders },
+        credentials: "include",
         body: form,
     });
     if (!response.ok) throw new Error(await response.text());
@@ -332,13 +320,12 @@ export async function getDocumentUrl(
 export async function downloadDocumentsZip(
     documentIds: string[],
 ): Promise<Blob> {
-    const authHeaders = await getAuthHeader();
     const response = await fetch(`${API_BASE}/single-documents/download-zip`, {
         method: "POST",
         cache: "no-store",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
-            ...authHeaders,
         },
         body: JSON.stringify({ document_ids: documentIds }),
     });
@@ -435,13 +422,12 @@ export async function streamChat(payload: {
     signal?: AbortSignal;
 }): Promise<Response> {
     const { signal, ...body } = payload;
-    const authHeaders = await getAuthHeader();
     return fetch(`${API_BASE}/chat`, {
         method: "POST",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
-            ...authHeaders,
         },
         body: JSON.stringify(body),
         signal,
@@ -465,13 +451,12 @@ export async function streamProjectChat(payload: {
     signal?: AbortSignal;
 }): Promise<Response> {
     const { projectId, signal, ...body } = payload;
-    const authHeaders = await getAuthHeader();
     return fetch(`${API_BASE}/projects/${projectId}/chat`, {
         method: "POST",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
-            ...authHeaders,
         },
         body: JSON.stringify(body),
         signal,
@@ -581,10 +566,9 @@ export async function deleteTabularReview(reviewId: string): Promise<void> {
 export async function streamTabularGeneration(
     reviewId: string,
 ): Promise<Response> {
-    const authHeaders = await getAuthHeader();
     return fetch(`${API_BASE}/tabular-review/${reviewId}/generate`, {
         method: "POST",
-        headers: { ...authHeaders },
+        credentials: "include",
     });
 }
 
@@ -595,10 +579,10 @@ export async function streamTabularChat(
     signal?: AbortSignal,
     context?: { reviewTitle?: string | null; projectName?: string | null },
 ): Promise<Response> {
-    const authHeaders = await getAuthHeader();
     return fetch(`${API_BASE}/tabular-review/${reviewId}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             messages,
             chat_id: chat_id ?? undefined,

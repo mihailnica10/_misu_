@@ -35,7 +35,7 @@ const OTHER_API_KEY_FIELDS = [
         label: "CourtListener API Key",
         placeholder: "Token...",
         description:
-            "Add a CourtListener API key if you want the latest CourtListener data. Otherwise, Misú will use the bulk data hosted by us.",
+            "Add a CourtListener API key if you want the latest CourtListener data. Otherwise, misú will use the bulk data hosted by us.",
     },
 ] as const;
 
@@ -50,7 +50,7 @@ export default function ApiKeysPage() {
             <p className="text-sm text-gray-500 mb-4">
                 You must provide your own API keys for the app to work or add
                 your API keys into the .env file if you are running your own
-                instance of Misú. All API keys are encrypted in storage.
+                instance of misú. All API keys are encrypted in storage.
             </p>
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white divide-y divide-gray-200">
                 {MODEL_API_KEY_FIELDS.map((field) => (

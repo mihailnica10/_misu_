@@ -1,0 +1,26 @@
+{
+  "name": "repo",
+  "version": "1.0.0",
+  "description": "**Mișu** este un asistent de documente juridice pentru piața românească, bazat pe [Mike](https://github.com/willchen96/mike) de willchen96.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mihailnica10/misu-legal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mihailnica10/misu-legal/issues"
+  },
+  "homepage": "https://github.com/mihailnica10/misu-legal#readme",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}

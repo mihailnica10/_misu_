@@ -36,21 +36,16 @@ export function useFetchSingleDoc(
 
         (async () => {
             try {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('misu_token') : null;
                 if (cancelled) return;
 
-                const apiBase =
-                    process.env.NEXT_PUBLIC_API_BASE_URL ??
-                    "http://localhost:3001";
+                const apiBase = "https://misu-api.mihailnica10.workers.dev";
                 const qs = versionId
                     ? `?version_id=${encodeURIComponent(versionId)}`
                     : "";
                 const response = await fetch(
                     `${apiBase}/single-documents/${documentId}/display${qs}`,
                     {
-                        headers: token
-                            ? { Authorization: `Bearer ${token}` }
-                            : {},
+                        credentials: "include",
                     },
                 );
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);

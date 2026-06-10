@@ -19,7 +19,7 @@
   ],
   "vars": {
     "ENVIRONMENT": "production",
-    "FRONTEND_URL": "https://misu.ro",
+    "FRONTEND_URL": "https://misu-legal.mihailnica10.workers.dev",
     "BETTER_AUTH_URL": "https://misu-api.mihailnica10.workers.dev"
   },
   "observability": {

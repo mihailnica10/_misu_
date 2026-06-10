@@ -75,9 +75,7 @@ function BulkEditActions({
         setProgress({ done: 0, total: pending.length });
         try {
             if (typeof window === 'undefined') return;
-            const token = localStorage.getItem('misu_token');
-            const apiBase =
-                process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+            const apiBase = "https://misu-api.mihailnica10.workers.dev";
 
             // Sequential so the per-document version counter advances in a
             // predictable order and the viewer doesn't race between bumps.
@@ -104,9 +102,7 @@ function BulkEditActions({
                         `${apiBase}/single-documents/${annotation.document_id}/edits/${annotation.edit_id}/${verb}`,
                         {
                             method: "POST",
-                            headers: token
-                                ? { Authorization: `Bearer ${token}` }
-                                : undefined,
+                            credentials: "include",
                         },
                     );
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -618,9 +614,8 @@ function DocDownloadBlock({
         setBusy(true);
         try {
             if (typeof window === 'undefined') return;
-            const token = localStorage.getItem('misu_token');
             const resp = await fetch(href, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                credentials: "include",
             });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const blob = await resp.blob();
@@ -991,7 +986,7 @@ interface Props {
     events?: AssistantEvent[];
     isStreaming?: boolean;
     isError?: boolean;
-    /** Human-readable error text rendered alongside the red Misú icon. */
+    /** Human-readable error text rendered alongside the red misú icon. */
     errorMessage?: string;
     annotations?: MisuCitationAnnotation[];
     onCitationClick?: (citation: MisuCitationAnnotation) => void;

@@ -47,23 +47,15 @@ interface UserProfileContextType {
     incrementMessageCredits: () => Promise<boolean>;
 }
 
-const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "https://misu-api.mihailnica10.workers.dev";
+const API_BASE = "https://misu-api.mihailnica10.workers.dev";
 
 const MONTHLY_CREDIT_LIMIT = 999999;
 
-function getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("misu_token");
-}
-
 async function apiGet<T>(path: string): Promise<T> {
-    const token = getToken();
     const res = await fetch(`${API_BASE}${path}`, {
+        credentials: "include",
         headers: {
             Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
     if (!res.ok) {
@@ -74,13 +66,12 @@ async function apiGet<T>(path: string): Promise<T> {
 }
 
 async function apiPatch<T>(path: string, body: unknown): Promise<T> {
-    const token = getToken();
     const res = await fetch(`${API_BASE}${path}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
     });
@@ -92,13 +83,12 @@ async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function apiPut<T>(path: string, body: unknown): Promise<T> {
-    const token = getToken();
     const res = await fetch(`${API_BASE}${path}`, {
         method: "PUT",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
     });
