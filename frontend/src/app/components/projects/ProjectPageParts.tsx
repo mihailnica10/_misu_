@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/app/components/shared/PageHeader";
 import { RenameableTitle } from "@/app/components/shared/RenameableTitle";
-import type { Project } from "@/app/components/shared/types";
-import type { DocumentVersion } from "@/app/lib/misuApi";
+import type { MikeProject as Project, TabularReview } from "@/app/components/shared/types";
+import type { DocumentVersion } from "@/app/lib/mikeApi";
 import { RowActions } from "@/app/components/shared/RowActions";
 
 export type ProjectTab = "documents" | "assistant" | "reviews";

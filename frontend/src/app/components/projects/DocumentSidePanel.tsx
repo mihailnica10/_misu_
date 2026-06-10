@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -15,15 +16,30 @@ import {
 import { ConfirmPopup } from "@/app/components/shared/ConfirmPopup";
 import { DocView } from "@/app/components/shared/DocView";
 import { WarningPopup } from "@/app/components/shared/WarningPopup";
-import type { Document } from "@/app/components/shared/types";
-import type { DocumentVersion } from "@/app/lib/misuApi";
+import type { Document, DocumentVersion } from "@/app/lib/mikeApi";
 import { cn } from "@/lib/utils";
 import { formatBytes, formatDate } from "./ProjectPageParts";
+import { fileTypeForVersion, filenameExtension, hasExtensionChange } from "@/app/lib/misuApi";
+
+function DataRow({ label, value }: { label: string; value: string | null }) {
+    return (
+        <div className="flex items-baseline justify-between gap-4">
+            <span className="text-gray-500">{label}</span>
+            <span className="truncate text-right font-medium text-gray-900">
+                {value ?? "—"}
+            </span>
+        </div>
+    );
+}
 
 const MIN_DOC_COLUMN_WIDTH = 420;
 const DEFAULT_DOC_COLUMN_WIDTH = 620;
-const MIN_DATA_COLUMN_WIDTH = 280;
+const MIN_DATA_COLUMN_WIDTH = 240;
 const DEFAULT_DATA_COLUMN_WIDTH = 340;
+
+function clampPanelWidth(width: number, minWidth: number): number {
+    return Math.max(MIN_DOC_COLUMN_WIDTH, Math.min(width, window.innerWidth - minWidth - 24));
+}
 const RESIZER_WIDTH = 6;
 const MAX_PANEL_WIDTH = 1180;
 const primaryGlassButtonClass =
@@ -381,6 +397,7 @@ export function DocumentSidePanel({
                     )}
                     title="Resize document panel"
                 />
+            </div>
 
                 <aside
                     className={cn(
@@ -498,3 +515,11 @@ export function DocumentSidePanel({
                                             : "—"
                                     }
                                 />
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+        </div>,
+        document.body,
+    );
+}

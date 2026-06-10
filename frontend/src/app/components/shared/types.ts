@@ -43,6 +43,8 @@ export interface MikeDocument {
   updated_at?: string | null;
   /** Max version_number across assistant_edit rows, null if doc is unedited. */
   latest_version_number?: number | null;
+  /** Current active version number for display */
+  active_version_number?: number | null;
 }
 
 export interface StructureNode {

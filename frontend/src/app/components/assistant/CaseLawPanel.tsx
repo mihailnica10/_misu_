@@ -14,7 +14,40 @@ import {
     ExternalLink,
 } from "lucide-react";
 import { MisuIcon } from "@/components/chat/misu-icon";
-import type { CaseCitationQuote } from "../shared/types";
+import type { CitationQuote } from "../shared/types";
+
+// Case-law specific quote that extends a citation with opinion info
+interface CaseCitationQuote extends CitationQuote {
+    opinionId: number | null;
+    author?: string | null;
+    type?: string | null;
+}
+
+// Sort opinions so they appear in a consistent order: majority, concurrence, dissent, then others
+function orderOpinions(opinions: CaseLawOpinion[]): { opinion: CaseLawOpinion }[] {
+    const priority: Record<string, number> = {
+        majority: 0,
+        concurrence: 1,
+        dissent: 2,
+    };
+    return [...opinions]
+        .sort((a, b) => {
+            const pa = priority[a.type ?? ""] ?? 99;
+            const pb = priority[b.type ?? ""] ?? 99;
+            return pa - pb;
+        })
+        .map((opinion) => ({ opinion }));
+}
+
+function opinionTitle(
+    args: { opinionId: number | null; type?: string | null; author?: string | null; url?: string | null },
+    _index?: number,
+): string {
+    const type = args.type ?? "unknown";
+    const author = args.author ?? "Unknown author";
+    return `${type.charAt(0).toUpperCase() + type.slice(1)} — ${author}`;
+}
+
 import {
     clearDocxQuoteHighlights,
     highlightDocxQuote,
@@ -26,7 +59,7 @@ import {
 import {
     getCourtlistenerOpinions,
     type CaseLawOpinion,
-} from "@/app/lib/misuApi";
+} from "@/app/lib/mikeApi";
 import { cn } from "@/lib/utils";
 
 export type CaseTab = {
@@ -212,7 +245,7 @@ export function CaseLawPanel({
         index: 0,
     });
     const opinionScrollRef = useRef<HTMLDivElement | null>(null);
-    const opinionContentRef = useRef<HTMLElement | null>(null);
+    const opinionContentRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (tab.opinions?.length) {
@@ -451,7 +484,7 @@ export function CaseLawPanel({
             {!loading && !error && opinions.length > 1 && (
                 <div className="relative mt-2 px-1 shadow-[inset_0_-1px_0_rgb(229_231_235)]">
                     <div className="relative z-10 flex items-end gap-1 overflow-hidden px-2 pt-1">
-                        {orderedOpinions.map(({ opinion, index }) => {
+                        {orderedOpinions.map(({ opinion }, index) => {
                             const opinionId = opinion.opinionId;
                             const isActive =
                                 opinionId !== null &&
@@ -492,9 +525,40 @@ export function CaseLawPanel({
                 {loading && (
                     <div className={cn("h-full min-h-0 rounded-lg border border-gray-200", opinionSurfaceClassName)}>
                         <div className="flex h-full items-center justify-center p-5">
-                            <MisuIcon spin mike size={28} />
+                            <MisuIcon spin size={28} />
                         </div>
                     </div>
                 )}
                 {error && (
                     <p className={cn("rounded-md p-4 font-serif text-sm text-red-600", opinionSurfaceClassName)}>
+                        {error}
+                    </p>
+                )}
+                {!loading && !error && activeOpinion && (
+                    <div
+                        ref={opinionContentRef}
+                        className="overflow-y-auto font-serif text-sm leading-relaxed text-gray-800 [&_p]:mb-3 [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm"
+                    >
+                        {activeOpinion.html ? (
+                            <div
+                                dangerouslySetInnerHTML={{
+                                    __html: DOMPurify.sanitize(
+                                        activeOpinion.html,
+                                    ),
+                                }}
+                            />
+                        ) : activeOpinion.text ? (
+                            <pre className="whitespace-pre-wrap font-serif text-sm">
+                                {activeOpinion.text}
+                            </pre>
+                        ) : (
+                            <p className="text-gray-400 italic">
+                                No opinion text available.
+                            </p>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

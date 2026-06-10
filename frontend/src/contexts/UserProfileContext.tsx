@@ -8,19 +8,26 @@ import React, {
     ReactNode,
     useCallback,
 } from "react";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface UserProfile {
+export interface ApiKeyEntry {
+    configured: boolean;
+    source: "user" | "env" | null;
+}
+
+export interface UserProfile {
     displayName: string | null;
     organisation: string | null;
     messageCreditsUsed: number;
-    creditsResetDate: string;
+    creditsResetDate: string | null;
     creditsRemaining: number;
     tier: string;
+    titleModel: string | null;
     tabularModel: string;
+    email: string | null;
     claudeApiKey: string | null;
     geminiApiKey: string | null;
+    apiKeys: Record<string, ApiKeyEntry>;
 }
 
 interface UserProfileContextType {
@@ -33,11 +40,154 @@ interface UserProfileContextType {
         value: string,
     ) => Promise<boolean>;
     updateApiKey: (
-        provider: "claude" | "gemini",
+        provider: string,
         value: string | null,
     ) => Promise<boolean>;
     reloadProfile: () => Promise<void>;
     incrementMessageCredits: () => Promise<boolean>;
+}
+
+const API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    "https://misu-api.mihailnica10.workers.dev";
+
+const MONTHLY_CREDIT_LIMIT = 999999;
+
+function getToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("misu_token");
+}
+
+async function apiGet<T>(path: string): Promise<T> {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}${path}`, {
+        headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `API error: ${res.status}`);
+    }
+    return res.json();
+}
+
+async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}${path}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `API error: ${res.status}`);
+    }
+    return res.json();
+}
+
+async function apiPut<T>(path: string, body: unknown): Promise<T> {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}${path}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `API error: ${res.status}`);
+    }
+    return res.json();
+}
+
+async function getProfile(): Promise<Record<string, unknown>> {
+    return apiGet("/user/profile");
+}
+
+async function updateProfile(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return apiPatch("/user/profile", payload);
+}
+
+async function getApiKeyStatus(): Promise<Record<string, boolean>> {
+    return apiGet("/user/api-keys");
+}
+
+async function saveApiKey(provider: string, value: string | null) {
+    // If removing a key, just record it as removed by setting empty
+    return apiPut(`/user/api-keys/${provider}`, {
+        api_key: value || "",
+    });
+}
+
+function buildProfile(
+    profileData: Record<string, unknown>,
+    apiKeyStatus: Record<string, boolean>,
+): UserProfile {
+    const creditsUsed = (profileData.messageCreditsUsed as number) ?? 0;
+    const apiKeys: Record<string, ApiKeyEntry> = {};
+    for (const provider of [
+        "claude",
+        "gemini",
+        "openai",
+        "openrouter",
+        "courtlistener",
+    ]) {
+        const configured = apiKeyStatus[provider] ?? false;
+        apiKeys[provider] = { configured, source: configured ? "user" : null };
+    }
+    return {
+        displayName: (profileData.displayName as string) ?? null,
+        organisation: (profileData.organisation as string) ?? null,
+        messageCreditsUsed: creditsUsed,
+        creditsResetDate: (profileData.creditsResetDate as string) ?? null,
+        creditsRemaining: Math.max(MONTHLY_CREDIT_LIMIT - creditsUsed, 0),
+        tier: (profileData.tier as string) || "Free",
+        titleModel: (profileData.titleModel as string) ?? null,
+        tabularModel:
+            (profileData.tabularModel as string) || "gemini-3-flash-preview",
+        email: (profileData.email as string) ?? null,
+        claudeApiKey: apiKeys["claude"]?.configured ? "••••••••" : null,
+        geminiApiKey: apiKeys["gemini"]?.configured ? "••••••••" : null,
+        apiKeys,
+    };
+}
+
+function defaultProfile(): UserProfile {
+    const futureResetDate = new Date();
+    futureResetDate.setDate(futureResetDate.getDate() + 30);
+    const defaultApiKeys: Record<string, ApiKeyEntry> = {};
+    for (const p of [
+        "claude",
+        "gemini",
+        "openai",
+        "openrouter",
+        "courtlistener",
+    ]) {
+        defaultApiKeys[p] = { configured: false, source: null };
+    }
+    return {
+        displayName: null,
+        organisation: null,
+        messageCreditsUsed: 0,
+        creditsResetDate: futureResetDate.toISOString(),
+        creditsRemaining: MONTHLY_CREDIT_LIMIT,
+        tier: "Free",
+        titleModel: null,
+        tabularModel: "gemini-3-flash-preview",
+        email: null,
+        claudeApiKey: null,
+        geminiApiKey: null,
+        apiKeys: defaultApiKeys,
+    };
 }
 
 const UserProfileContext = createContext<UserProfileContextType | undefined>(
@@ -49,106 +199,16 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const loadProfile = useCallback(async (userId: string) => {
+    const loadProfile = useCallback(async () => {
         try {
-            const { data, error } = await supabase
-                .from("user_profiles")
-                .select("*")
-                .eq("user_id", userId)
-                .single();
-
-            // Define credit limit constant
-            const MONTHLY_CREDIT_LIMIT = 999999; // temporarily unlimited
-
-            // Calculate a default future reset date (30 days from now)
-            const futureResetDate = new Date();
-            futureResetDate.setDate(futureResetDate.getDate() + 30);
-            const defaultResetDateStr = futureResetDate.toISOString();
-
-            if (error) {
-                // Set fallback profile data if profile doesn't exist
-                setProfile({
-                    displayName: null,
-                    organisation: null,
-                    messageCreditsUsed: 0,
-                    creditsResetDate: defaultResetDateStr,
-                    creditsRemaining: MONTHLY_CREDIT_LIMIT,
-                    tier: "Free",
-                    tabularModel: "gemini-3-flash-preview",
-                    claudeApiKey: null,
-                    geminiApiKey: null,
-                });
-                return;
-            }
-
-            // Use fetched data to update profile state
-            if (data) {
-                let creditsUsed = data.message_credits_used;
-                let resetDate = data.credits_reset_date;
-                let creditsRemaining = MONTHLY_CREDIT_LIMIT - creditsUsed;
-                let shouldUpdateDb = false;
-
-                // Check if credits have expired and need reset
-                if (resetDate && new Date() > new Date(resetDate)) {
-                    // Calculate new reset date
-                    const newResetDate = new Date();
-                    newResetDate.setDate(newResetDate.getDate() + 30);
-                    resetDate = newResetDate.toISOString();
-                    creditsUsed = 0;
-                    creditsRemaining = MONTHLY_CREDIT_LIMIT;
-                    shouldUpdateDb = true;
-                }
-
-                // 1. Update local state immediately
-                setProfile({
-                    displayName: data.display_name,
-                    organisation: data.organisation ?? null,
-                    messageCreditsUsed: creditsUsed,
-                    creditsResetDate: resetDate,
-                    creditsRemaining: creditsRemaining,
-                    tier: data.tier || "Free",
-                    tabularModel:
-                        data.tabular_model || "gemini-3-flash-preview",
-                    claudeApiKey: data.claude_api_key ?? null,
-                    geminiApiKey: data.gemini_api_key ?? null,
-                });
-
-                // 2. Update database in background if needed
-                if (shouldUpdateDb) {
-                    supabase
-                        .from("user_profiles")
-                        .update({
-                            message_credits_used: 0,
-                            credits_reset_date: resetDate,
-                            updated_at: new Date().toISOString(),
-                        })
-                        .eq("user_id", userId)
-                        .then(({ error }) => {
-                            if (error)
-                                console.error(
-                                    "Failed to auto-reset credits",
-                                    error,
-                                );
-                        });
-                }
-            }
+            const [profileData, keyStatus] = await Promise.all([
+                getProfile(),
+                getApiKeyStatus(),
+            ]);
+            setProfile(buildProfile(profileData, keyStatus));
         } catch (e) {
-            // Calculate a default future reset date for fallback
-            const futureResetDate = new Date();
-            futureResetDate.setDate(futureResetDate.getDate() + 30);
-
-            // Set fallback profile data on exception
-            setProfile({
-                displayName: null,
-                organisation: null,
-                messageCreditsUsed: 0,
-                creditsResetDate: futureResetDate.toISOString(),
-                creditsRemaining: 999999, // temporarily unlimited
-                tier: "Free",
-                tabularModel: "gemini-3-flash-preview",
-                claudeApiKey: null,
-                geminiApiKey: null,
-            });
+            console.error("Failed to load profile:", e);
+            setProfile(defaultProfile());
         } finally {
             setLoading(false);
         }
@@ -157,7 +217,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (isAuthenticated && user) {
             setLoading(true);
-            loadProfile(user.id);
+            loadProfile();
         } else {
             setProfile(null);
             setLoading(false);
@@ -166,161 +226,90 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
     const updateDisplayName = useCallback(
         async (displayName: string): Promise<boolean> => {
-            if (!user) {
-                return false;
-            }
-
             try {
-                const { error } = await supabase
-                    .from("user_profiles")
-                    .update({
-                        display_name: displayName,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq("user_id", user.id);
-
-                if (error) {
-                    throw error;
-                }
-
-                setProfile((prev) => (prev ? { ...prev, displayName } : null));
+                const updated = await updateProfile({ displayName });
+                const keyStatus = await getApiKeyStatus();
+                setProfile(buildProfile(updated, keyStatus));
                 return true;
             } catch {
                 return false;
             }
         },
-        [user],
+        [],
     );
 
     const updateOrganisation = useCallback(
         async (organisation: string): Promise<boolean> => {
-            if (!user) return false;
             try {
-                const { error } = await supabase
-                    .from("user_profiles")
-                    .update({
-                        organisation,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq("user_id", user.id);
-                if (error) throw error;
-                setProfile((prev) =>
-                    prev ? { ...prev, organisation } : null,
-                );
+                const updated = await updateProfile({ organisation });
+                const keyStatus = await getApiKeyStatus();
+                setProfile(buildProfile(updated, keyStatus));
                 return true;
             } catch {
                 return false;
             }
         },
-        [user],
+        [],
     );
 
     const updateModelPreference = useCallback(
-        async (
-            field: "tabularModel",
-            value: string,
-        ): Promise<boolean> => {
-            if (!user) return false;
-            const dbField = field === "tabularModel" ? "tabular_model" : "";
-            if (!dbField) return false;
+        async (field: "tabularModel", value: string): Promise<boolean> => {
             try {
-                const { error } = await supabase
-                    .from("user_profiles")
-                    .update({
-                        [dbField]: value,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq("user_id", user.id);
-                if (error) throw error;
-                setProfile((prev) =>
-                    prev ? { ...prev, [field]: value } : null,
-                );
+                const payload: Record<string, unknown> = {};
+                payload[field] = value;
+                const updated = await updateProfile(payload);
+                const keyStatus = await getApiKeyStatus();
+                setProfile(buildProfile(updated, keyStatus));
                 return true;
             } catch {
                 return false;
             }
         },
-        [user],
+        [],
     );
 
     const updateApiKey = useCallback(
-        async (
-            provider: "claude" | "gemini",
-            value: string | null,
-        ): Promise<boolean> => {
-            if (!user) return false;
-            const dbField =
-                provider === "claude" ? "claude_api_key" : "gemini_api_key";
-            const stateField =
-                provider === "claude" ? "claudeApiKey" : "geminiApiKey";
-            const normalized = value?.trim() ? value.trim() : null;
+        async (provider: string, value: string | null): Promise<boolean> => {
             try {
-                const { error } = await supabase
-                    .from("user_profiles")
-                    .update({
-                        [dbField]: normalized,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq("user_id", user.id);
-                if (error) throw error;
-                setProfile((prev) =>
-                    prev ? { ...prev, [stateField]: normalized } : null,
-                );
+                await saveApiKey(provider, value);
+                const [profileData, keyStatus] = await Promise.all([
+                    getProfile(),
+                    getApiKeyStatus(),
+                ]);
+                setProfile(buildProfile(profileData, keyStatus));
                 return true;
             } catch {
                 return false;
             }
         },
-        [user],
+        [],
     );
 
     const reloadProfile = useCallback(async () => {
         if (user) {
-            await loadProfile(user.id);
+            await loadProfile();
         }
     }, [user, loadProfile]);
 
     const incrementMessageCredits = useCallback(async (): Promise<boolean> => {
-        if (!user || !profile) {
-            return false;
-        }
-
-        // Check if user has credits remaining
-        if (profile.creditsRemaining <= 0) {
-            return false;
-        }
-
+        if (!profile || profile.creditsRemaining <= 0) return false;
         try {
             const newCreditsUsed = profile.messageCreditsUsed + 1;
-
-            const { error } = await supabase
-                .from("user_profiles")
-                .update({
-                    message_credits_used: newCreditsUsed,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq("user_id", user.id);
-
-            if (error) {
-                throw error;
-            }
-
-            // Update local state
             setProfile((prev) =>
                 prev
                     ? {
                           ...prev,
                           messageCreditsUsed: newCreditsUsed,
-                          creditsRemaining: 999999 - newCreditsUsed, // temporarily unlimited
+                          creditsRemaining:
+                              MONTHLY_CREDIT_LIMIT - newCreditsUsed,
                       }
                     : null,
             );
-
             return true;
-        } catch (err) {
+        } catch {
             return false;
         }
-    }, [user, profile]);
+    }, [profile]);
 
     return (
         <UserProfileContext.Provider

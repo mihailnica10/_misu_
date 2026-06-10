@@ -14,6 +14,7 @@ interface Props {
     deleting?: boolean;
     onRename?: () => void;
     onUpdateCmNumber?: () => void;
+    renameLabel?: string;
 }
 
 export function RowActions({ onDelete, onHide, onUnhide, onDownload, onRemoveFromFolder, onShowAllVersions, onUploadNewVersion, deleting, onRename, onUpdateCmNumber }: Props) {

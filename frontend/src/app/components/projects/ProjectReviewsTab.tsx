@@ -3,7 +3,7 @@
 import { type Dispatch, type SetStateAction } from "react";
 import { Table2 } from "lucide-react";
 import { RowActions } from "@/app/components/shared/RowActions";
-import type { Document, TabularReview } from "@/app/components/shared/types";
+import type { MikeDocument as Document, TabularReview } from "@/app/components/shared/types";
 import { formatDate, NAME_COL_W } from "./ProjectPageParts";
 
 export function ProjectReviewsTab({

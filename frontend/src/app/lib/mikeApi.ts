@@ -226,6 +226,10 @@ export interface MikeDocumentVersion {
     source: string;
     created_at: string;
     display_name: string | null;
+    filename?: string | null;
+    file_type?: string | null;
+    size_bytes?: number | null;
+    page_count?: number | null;
 }
 
 export async function listDocumentVersions(
@@ -811,5 +815,37 @@ export async function deleteWorkflowShare(
 ): Promise<void> {
     await apiRequest(`/workflows/${workflowId}/shares/${shareId}`, {
         method: "DELETE",
+    });
+}
+
+// ---------------------------------------------------------------------------
+// DocumentVersion (alias for MikeDocumentVersion, used by misuApi consumers)
+// ---------------------------------------------------------------------------
+export type Document = MikeDocument;
+export type DocumentVersion = MikeDocumentVersion;
+
+// ---------------------------------------------------------------------------
+// CaseLaw — get opinions for a case cluster
+// ---------------------------------------------------------------------------
+export interface CaseLawOpinion {
+    id: number;
+    cluster_id: number;
+    opinionId: number;
+    opinion_text?: string | null;
+    text_length?: number | null;
+    author?: string | null;
+    type?: string | null;
+    url?: string | null;
+    html?: string | null;
+    text?: string | null;
+}
+
+export async function getCourtlistenerOpinions(
+    clusterId: number,
+): Promise<CaseLawOpinion[]> {
+    return apiRequest<CaseLawOpinion[]>(`/case-law/case-opinions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cluster_id: clusterId }),
     });
 }
